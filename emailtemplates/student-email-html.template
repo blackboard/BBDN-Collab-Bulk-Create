@@ -1,0 +1,14 @@
+<html>
+<body>
+<p>Hello [studentName],</p>
+
+<p>Here is the your Collaborate information:</p>
+
+<ul>
+<li>Class: [clsName]</li>
+<li>Link: [link]</li>
+
+<p>Thanks,<br />
+FCPS</p>
+</body>
+</html>
