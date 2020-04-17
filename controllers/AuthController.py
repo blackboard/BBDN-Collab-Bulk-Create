@@ -93,6 +93,7 @@ class AuthController():
 
         else:
             self.logger.debug("[auth:setToken()] ERROR: " + str(r))
+            raise ValueError
 
     def getToken(self):
         #if token time is less than a one second then

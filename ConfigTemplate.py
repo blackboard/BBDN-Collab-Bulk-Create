@@ -5,13 +5,6 @@ collab = {
     "verify_certs" : "True"
 }
 
-email = {
-    "smtpserver" : "smtp.gmail.com",
-    "smtpport" : 587,
-    "from" : "EMAILADDRESS",
-    "subject" : "SUBJECT"
-}
-
 session_settings = {
     "createdTimezone" : "America/New_York",
     "courseRoomEnabled" : "false",
@@ -20,11 +13,11 @@ session_settings = {
     "occurrenceType": "S",
     "recurrenceEndType": "on_date",
     "daysOfTheWeek": [
-      "mo",
-      "tu",
-      "we",
-      "th",
-      "fr"
+    "mo",
+    "tu",
+    "we",
+    "th",
+    "fr"
     ],
     "recurrenceType": "daily",
     "interval": "1",

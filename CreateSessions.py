@@ -32,13 +32,11 @@ from controllers import AuthController
 from controllers import UserController
 from controllers import SessionController
 from controllers import ContextController
-from controllers import EmailController
 
 # Import Models
 from models import User
 from models import Session
 from models import Context
-from models import EmailTemplate
 
 def preflight(datadir,COURSES,USERS):
     if not os.path.exists('data'):
@@ -46,6 +44,15 @@ def preflight(datadir,COURSES,USERS):
 
     if not os.path.exists('logs'):
         os.makedirs('logs')
+
+    if not os.path.exists('output'):
+        os.makedirs('output')
+
+    if os.path.exists('output/teacherenrollments.csv'):
+        os.unlink('output/teacherenrollments.csv')
+
+    if os.path.exists('output/studentenrollments.csv'):
+        os.unlink('output/studentenrollments.csv')
 
     if not os.path.exists('Config.py'):
         print("Please copy the ConfigTemplate.py file to Config.py and configure the app.")
@@ -117,21 +124,13 @@ def main(datadir,courses,users):
         print(errMsg)
         logger.error(errMsg)
         sys.exit()
-
-    try:
-        emlCtrl = EmailController.EmailController(Config.email)
-    except KeyError:
-        errMsg = "Invalid configuration in Config.py: email missing"
-        print(errMsg)
-        logger.error(errMsg)
-        sys.exit()
     
     logger.info("Starting bulk creation process")
 
     try:
         authorized_session = AuthController.AuthController(Config.collab['collab_base_url'],Config.collab['collab_key'],Config.collab['collab_secret'],VERIFY_CERTS)
         authorized_session.setToken()
-    except KeyError:
+    except ValueError:
         errMsg = "Invalid configuration in Config.py: collab settings missing or incomplete"
         print(errMsg)
         logger.error(errMsg)
@@ -155,6 +154,21 @@ def main(datadir,courses,users):
         session_config = Config.session_settings
     except KeyError:
         errMsg = "Invalid configuration in Config.py: session settings missing"
+        print(errMsg)
+        logger.error(errMsg)
+        sys.exit()
+
+    try:
+        teachercsv = open('output/teacherenrollments.csv', 'w', newline='')
+        teacherwriter = csv.writer(teachercsv, delimiter=',', quotechar='"')
+        teacherwriter.writerow([ 'TEACHERID', 'TEACHEREMAIL', 'COURSENAME', 'URL'])
+
+        studentcsv = open('output/studentenrollments.csv', 'w', newline='')
+        studentwriter = csv.writer(studentcsv, delimiter=',', quotechar='"')
+        studentwriter.writerow([ 'STUDENTID', 'STUDENTEMAIL', 'COURSENAME', 'URL'])
+
+    except Exception as e:
+        errMsg = "Error opening output file: " + str(e)
         print(errMsg)
         logger.error(errMsg)
         sys.exit()
@@ -250,17 +264,8 @@ def main(datadir,courses,users):
                     else:
                         logger.error("Error creating enrollment " + insName + " for course " + crsName + ", " + result + ": " + urlres[result])
                         continue
-
-                    # TODO send email here
-                    variables = {}
-                    variables['insName'] = teacher.getDisplayName()
-                    variables['clsName'] = ses.getName()
-                    variables['link'] = teacherUrl
-                    teacher_email_html = EmailTemplate.EmailTemplate('teacher-email-html', variables, True)
-
-                    logger.debug(teacher_email_html.render())
-                    
-                    emlCtrl.sendmail(insEmail,teacher_email_html)
+                                   
+                    teacherwriter.writerow([ teacher.getExtId(), teacher.getEmail(), ses.getName(), teacherUrl])
 
                     logger.info("Session link: " + teacherUrl + ", to User: " + insEmail + ", SENT for course " + crsName)
 
@@ -336,21 +341,31 @@ def main(datadir,courses,users):
 
                     # TODO send email
                     variables = {}
-                    variables['studentName'] = user.getDisplayName()
+                    variables['studentName'] = user.getExtId()
                     variables['clsName'] = session.getName()
                     variables['link'] = studentUrl
                     
-                    student_email_html = EmailTemplate.EmailTemplate('student-email-html', variables, True)
-
-                    logger.debug(student_email_html.render())
-                    
-                    emlCtrl.sendmail(user.getEmail(), student_email_html)
+                    studentwriter.writerow([ user.getExtId(), user.getEmail(), session.getName(), studentUrl])
 
                     logger.info("Session link: " + studentUrl + ", to User: " + user.getEmail() + ", SENT for course " + session.getName())
 
     logger.info("Bulk creation processing complete")
+
+
         
 if __name__ == "__main__":
 
-    main()
+    pid = str(os.getpid())
+    pidfile = ".running.lck"
+
+    if os.path.isfile(pidfile):
+        print("Script is already running, exiting")
+        sys.exit()
+
+    open(pidfile, 'w').write(pid)
+
+    try:
+        main()
+    finally:
+        os.unlink(pidfile)
     
