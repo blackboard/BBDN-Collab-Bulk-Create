@@ -1,6 +1,8 @@
 import logging
 import yagmail
 import getpass
+from smtplib import SMTPServerDisconnected
+from smtplib import SMTPDataError
 
 class EmailController:
 
@@ -17,10 +19,15 @@ class EmailController:
         receiver = to
         body = html.render()
 
-        yag = yagmail.SMTP(user=self.sender_email, password=self.password, host=self.server)
+        try:
+            yag = yagmail.SMTP(user=self.sender_email, password=self.password, host=self.server)
 
-        yag.send(
-            to=receiver,
-            subject=self.subject,
-            contents=body,
-)
+            yag.send(
+                to=receiver,
+                subject=self.subject,
+                contents=body,
+            )
+        except SMTPServerDisconnected as ssd:
+            self.logger(ssd.strerror + " encountered while sending mail to " + receiver)
+        except SMTPDataError as sde:
+            self.logger(sde.smtp_error + " encountered while sending mail to " + receiver + ": " + sde.smtp_code)
