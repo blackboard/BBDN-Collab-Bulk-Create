@@ -111,4 +111,6 @@ dmypy.json
 
 Config.py
 data/*.csv
-*.log
+logs/*.log
+output/*.csv
+.running.lck
