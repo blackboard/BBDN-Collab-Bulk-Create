@@ -13,15 +13,13 @@ class EmailController:
 
         self.password = getpass.getpass("Please enter your email password: ")
 
-        self.yag = yagmail.SMTP(user=self.sender_email, password=self.password, host=self.server)
-
-
     def sendmail(self,to,html):
         receiver = to
         body = html.render()
 
-        
-        self.yag.send(
+        yag = yagmail.SMTP(user=self.sender_email, password=self.password, host=self.server)
+
+        yag.send(
             to=receiver,
             subject=self.subject,
             contents=body,
