@@ -28,6 +28,8 @@ class EmailController:
                 contents=body,
             )
         except SMTPServerDisconnected as ssd:
-            self.logger(ssd.strerror + " encountered while sending mail to " + receiver)
+            self.logger.error(str(ssd.strerror) + " encountered while sending mail to " + str(receiver))
         except SMTPDataError as sde:
-            self.logger(sde.smtp_error + " encountered while sending mail to " + receiver + ": " + sde.smtp_code)
+            self.logger.error(str(sde.smtp_error) + " encountered while sending mail to " + str(receiver) + ": " + str(sde.smtp_code))
+        except Exception as e:
+            self.logger.error("Error in EmailController: " + str(e))

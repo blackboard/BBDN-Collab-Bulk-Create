@@ -40,6 +40,36 @@ from models import Session
 from models import Context
 from models import EmailTemplate
 
+def preflight(datadir,COURSES,USERS):
+    if not os.path.exists('data'):
+        os.makedirs('data')
+
+    if not os.path.exists('logs'):
+        os.makedirs('logs')
+
+    if not os.path.exists('Config.py'):
+        print("Please copy the ConfigTemplate.py file to Config.py and configure the app.")
+        sys.exit()
+
+    if not os.path.exists(datadir):
+        print("Specified data dir " + datadir + " does not exist.")
+        sys.exit()
+
+    if COURSES:
+        if not os.path.exists(datadir + '/course.csv'):
+            print("Course data file " + datadir + "/course.csv does not exist.")
+            sys.exit()
+
+    if USERS:
+        if not os.path.exists(datadir + '/student.csv'):
+            print("Student data file " + datadir + "/student.csv does not exist.")
+            sys.exit()
+
+        if not os.path.exists(datadir + '/enrollment.csv'):
+            print("Enrollment data file " + datadir + "/enrollment.csv does not exist.")
+            sys.exit()
+    
+
 def validate_email(email):
     regex = '^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$'
 
@@ -66,32 +96,68 @@ def main(datadir,courses,users):
         if users:
             USERS = True
 
-    dictConfig(Config.logging)
-    logger = logging.getLogger('main')
+    preflight(datadir,COURSES,USERS)
+
+    try:
+        dictConfig(Config.logging)
+        logger = logging.getLogger('main')
+    except KeyError:
+        print("Invalid configuration in Config.py: logging missing")
+        sys.exit()
 
     logger.debug("datadir: " + datadir + ", COURSES: " + str(COURSES) + ", USERS: " + str(USERS))
 
-    if Config.collab['verify_certs'] == 'True':
-        VERIFY_CERTS = True
-    else:
-        VERIFY_CERTS = False
+    try:
+        if Config.collab['verify_certs'] == 'True':
+            VERIFY_CERTS = True
+        else:
+            VERIFY_CERTS = False
+    except KeyError:
+        errMsg = "Invalid configuration in Config.py: collab.verify_certs missing."
+        print(errMsg)
+        logger.error(errMsg)
+        sys.exit()
 
-    emlCtrl = EmailController.EmailController(Config.email)
+    try:
+        emlCtrl = EmailController.EmailController(Config.email)
+    except KeyError:
+        errMsg = "Invalid configuration in Config.py: email missing"
+        print(errMsg)
+        logger.error(errMsg)
+        sys.exit()
     
     logger.info("Starting bulk creation process")
 
-    authorized_session = AuthController.AuthController(Config.collab['collab_base_url'],Config.collab['collab_key'],Config.collab['collab_secret'],VERIFY_CERTS)
-    authorized_session.setToken()
+    try:
+        authorized_session = AuthController.AuthController(Config.collab['collab_base_url'],Config.collab['collab_key'],Config.collab['collab_secret'],VERIFY_CERTS)
+        authorized_session.setToken()
+    except KeyError:
+        errMsg = "Invalid configuration in Config.py: collab settings missing or incomplete"
+        print(errMsg)
+        logger.error(errMsg)
+        sys.exit()
 
     ctxDict = {}
     usrDict = {}
     sesDict = {}
 
-    ctxCtrl = ContextController.ContextController(Config.collab['collab_base_url'], authorized_session, VERIFY_CERTS)
-    usrCtrl = UserController.UserController(Config.collab['collab_base_url'], authorized_session, VERIFY_CERTS)
-    sesCtrl = SessionController.SessionController(Config.collab['collab_base_url'], authorized_session, VERIFY_CERTS)
+    try:
+        ctxCtrl = ContextController.ContextController(Config.collab['collab_base_url'], authorized_session, VERIFY_CERTS)
+        usrCtrl = UserController.UserController(Config.collab['collab_base_url'], authorized_session, VERIFY_CERTS)
+        sesCtrl = SessionController.SessionController(Config.collab['collab_base_url'], authorized_session, VERIFY_CERTS)
+    except KeyError:
+        errMsg = "Invalid configuration in Config.py: collab settings missing or incomplete"
+        print(errMsg)
+        logger.error(errMsg)
+        sys.exit()
 
-    session_config = Config.session_settings
+    try:
+        session_config = Config.session_settings
+    except KeyError:
+        errMsg = "Invalid configuration in Config.py: session settings missing"
+        print(errMsg)
+        logger.error(errMsg)
+        sys.exit()
 
     if COURSES:
         with open(datadir + '/course.csv', newline='') as csvfile:
@@ -285,5 +351,6 @@ def main(datadir,courses,users):
     logger.info("Bulk creation processing complete")
         
 if __name__ == "__main__":
+
     main()
     

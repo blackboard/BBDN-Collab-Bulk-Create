@@ -6,6 +6,8 @@ collab = {
 }
 
 email = {
+    "smtpserver" : "smtp.gmail.com",
+    "smtpport" : 587,
     "from" : "EMAILADDRESS",
     "subject" : "SUBJECT"
 }
