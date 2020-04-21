@@ -11,18 +11,6 @@ session_settings = {
     "boundaryTime": "15",
     "participantCanUseTools": "false",
     "occurrenceType": "S",
-    "recurrenceEndType": "on_date",
-    "daysOfTheWeek": [
-    "mo",
-    "tu",
-    "we",
-    "th",
-    "fr"
-    ],
-    "recurrenceType": "daily",
-    "interval": "1",
-    "numberOfOccurrences": 0,
-    "endDate": "2020-03-27T17:00:00.000Z",
     "allowInSessionInvitees": "false",
     "allowGuest": "false",
     "guestRole": "participant",
@@ -47,7 +35,7 @@ logging = {
     "handlers" : {
         "collab_file_handler" : {
             "class" : "logging.handlers.RotatingFileHandler",
-            "level" : "DEBUG",
+            "level" : "INFO",
             "formatter" : "simple",
             "filename" : "logs/session-creation.log",
             "maxBytes" : 10485760,
@@ -57,33 +45,33 @@ logging = {
     },
     "loggers" : {
         "sessions" : {
-            "level": "DEBUG",
+            "level": "INFO",
             "handlers" : ["collab_file_handler"],
             "propagate" : "no"
         },
         "contexts": {
-            "level": "DEBUG",
+            "level": "INFO",
             "handlers": ["collab_file_handler"],
             "propagate": "no"
         },
         "users": {
-            "level": "DEBUG",
+            "level": "INFO",
             "handlers": ["collab_file_handler"],
             "propagate": "no"
         },
         "csv": {
-            "level": "DEBUG",
+            "level": "INFO",
             "handlers": ["collab_file_handler"],
             "propagate": "no"
         },
         "email": {
-            "level": "DEBUG",
+            "level": "INFO",
             "handlers": ["collab_file_handler"],
             "propagate": "no"
         },
     },
     "root": {
-        "level": "DEBUG",
+        "level": "INFO",
         "handlers": ["collab_file_handler"]
     }
 }

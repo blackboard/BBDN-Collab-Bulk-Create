@@ -165,7 +165,7 @@ def main(datadir,courses,users):
 
         studentcsv = open('output/studentenrollments.csv', 'w', newline='')
         studentwriter = csv.writer(studentcsv, delimiter=',', quotechar='"')
-        studentwriter.writerow([ 'STUDENTID', 'STUDENTEMAIL', 'COURSENAME', 'URL'])
+        studentwriter.writerow([ 'COURSEID', 'TEACHERID', 'TEACHERNAME', 'STUDENTID', 'STUDENTNAME', 'STUDENTEMAIL', 'COURSENAME', 'URL'])
 
     except Exception as e:
         errMsg = "Error opening output file: " + str(e)
@@ -212,8 +212,10 @@ def main(datadir,courses,users):
 
                     logger.debug(ctxId['contextId'])
 
-                    ctxDict[crsId] = ctxId['contextId']
-
+                    ctxDict[crsId] = {
+                        "contextId" : ctxId['contextId'],
+                        "teacherId" : insId
+                    }
                     ses = Session.Session(crsName, crsName, str(datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")), None, session_config)
                     sesres = sesCtrl.createSession(ses.getSessionJson())
 
@@ -337,15 +339,8 @@ def main(datadir,courses,users):
                     else:
                         logger.error("Error creating enrollment " + user.getName() + " for course " + session.getName() + ", " + result + ": " + urlres[result])
                         continue
-
-
-                    # TODO send email
-                    variables = {}
-                    variables['studentName'] = user.getExtId()
-                    variables['clsName'] = session.getName()
-                    variables['link'] = studentUrl
-                    
-                    studentwriter.writerow([ user.getExtId(), user.getEmail(), session.getName(), studentUrl])
+              
+                    studentwriter.writerow([ courseId, ctxDict[courseId]['teacherId'], usrDict[ctxDict[courseId]['teacherId']].getDisplayName(), user.getExtId(), user.getDisplayName(), user.getEmail(), session.getName(), studentUrl])
 
                     logger.info("Session link: " + studentUrl + ", to User: " + user.getEmail() + ", SENT for course " + session.getName())
 

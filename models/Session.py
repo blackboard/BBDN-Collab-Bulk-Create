@@ -88,24 +88,5 @@ class Session():
             sessionJson['noEndDate'] = self.noEndDate
         else:
             sessionJson['endTime'] = self.endTime
-
-        recurrenceEndType = self.session_config['recurrenceEndType']
-
-        if recurrenceEndType is not None:
-
-            recurrenceRuleJson = {
-                "recurrenceEndType" : recurrenceEndType,
-                "recurrenceType" : self.session_config['recurrenceType'],
-                "daysOfTheWeek" : self.session_config['daysOfTheWeek'],
-                "interval" : self.session_config['interval']
-            }
-
-            if recurrenceEndType == 'on_date':
-                recurrenceRuleJson['endDate'] = self.session_config['endDate']
-
-            if recurrenceEndType == 'after_occurrence_count':
-                recurrenceRuleJson['numberOfOccurences'] = self.session_config['numberOfOccurences']
-
-            sessionJson['recurrenceRule'] = recurrenceRuleJson
         
         return sessionJson
