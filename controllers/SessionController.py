@@ -57,6 +57,26 @@ class SessionController():
             self.logger.debug("Sessions.createSession ERROR: " + str(r))
             return({str(r.status_code) : r.text})
 
+    def patchSession(self):
+        #4b73a112a0914ed1a7fba0433c9c7e92
+        #"Authorization: Bearer $token"
+        authStr = 'Bearer ' + self.auth.getToken()
+
+        payload = {
+            "openChair": "true"
+        }
+        
+        r = requests.patch("https://" + self.target_url + '/sessions/644472c8132c45bea1cade2ea1696fac', headers={ 'Authorization':authStr,'Content-Type':'application/json','Accept':'application/json' }, json=payload, verify=self.verify_certs)
+        
+        if r.status_code == 200:
+            res = json.loads(r.text)
+            self.logger.debug("Session: " + json.dumps(res,indent=4, separators=(',', ': ')))
+            self.SESSION_ID = res['id']
+            return({str(r.status_code) : self.SESSION_ID})
+        else:
+            self.logger.debug("Sessions.createSession ERROR: " + str(r))
+            return({str(r.status_code) : r.text})
+
     def enrollUser(self, session_id, userId, role):
         #"Authorization: Bearer $token"
         authStr = 'Bearer ' + self.auth.getToken()
@@ -69,19 +89,17 @@ class SessionController():
         payload = {
             'launchingRole' : role,
             'editingPermission': editingPermission,
-            'user': {
-                'id' : userId
-            }
+            'userId' : userId
         }
 
         self.logger.debug(payload)
         
-        r = requests.post("https://" + self.target_url + '/sessions/' + session_id + "/url", headers={'Authorization':authStr,'Content-Type':'application/json','Accept':'application/json'}, json=payload, verify=self.verify_certs)
+        r = requests.post("https://" + self.target_url + '/sessions/' + session_id + "/enrollments", headers={'Authorization':authStr,'Content-Type':'application/json','Accept':'application/json'}, json=payload, verify=self.verify_certs)
         
         if r.status_code == 200:
             res = json.loads(r.text)
             self.logger.debug(json.dumps(res,indent=4, separators=(',', ': ')))
-            url = res['url']
+            url = res['permanentUrl']
             return({str(r.status_code) : url})
         else:
             self.logger.debug("Sessions.enrollUser ERROR: " + str(r.status_code) + ": " + r.text)

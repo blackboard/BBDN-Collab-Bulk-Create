@@ -46,3 +46,19 @@ class UserController():
         else:
             self.logger.debug("Users.createUser ERROR: " + str(r.status_code) + ": " + r.text)
             return({str(r.status_code) : r.text})
+
+    def getUser(self,username):
+        #"Authorization: Bearer $token"
+        authStr = 'Bearer ' + self.auth.getToken()
+   
+        #r = requests.get("https://" + self.target_url + '/users?name=' + username, headers={ 'Authorization':authStr,'Content-Type':'application/json','Accept':'application/json' }, verify=self.verify_certs)
+        r = requests.get("https://" + self.target_url + '/users', headers={ 'Authorization':authStr,'Content-Type':'application/json','Accept':'application/json' }, verify=self.verify_certs)
+
+        if r.status_code == 200:
+            res = json.loads(r.text)
+            self.logger.debug(json.dumps(res,indent=4, separators=(',', ': ')))
+            userId = res['results'][0]['id']
+            return({str(r.status_code) : userId})
+        else:
+            self.logger.debug("Users.createUser ERROR: " + str(r.status_code) + ": " + r.text)
+            return({str(r.status_code) : r.text})

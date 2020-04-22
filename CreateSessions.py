@@ -337,7 +337,7 @@ def main(datadir,courses,users):
                     if result == '200':
                         studentUrl = urlres[result]
                     else:
-                        logger.error("Error creating enrollment " + user.getName() + " for course " + session.getName() + ", " + result + ": " + urlres[result])
+                        logger.error("Error creating enrollment " + user.getDisplayName() + " for course " + session.getName() + ", " + result + ": " + urlres[result])
                         continue
               
                     studentwriter.writerow([ courseId, ctxDict[courseId]['teacherId'], usrDict[ctxDict[courseId]['teacherId']].getDisplayName(), user.getExtId(), user.getDisplayName(), user.getEmail(), session.getName(), studentUrl])
