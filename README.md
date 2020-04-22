@@ -19,8 +19,6 @@ pip install -r requirements.txt
 
 Before running, you must copy ConfigTemplate.py to Config.py and insert your credentials.
 
-### Collab Configuration
-
 Step one is to configure the collab API connection with your key, secret, and base url. The base url should not contain the schema, for example: `techpreview.bbcollab.com`, not `https://techpreview.bbcollab.com`.
 
 ```json
@@ -32,7 +30,7 @@ collab = {
 }
 ```
 
-Next, verify your session settings match your expectations. For more information on session settings, see [Collaborate Session Definitions](https://docs.blackboard.com/collab/CollabSessionDefinitions.html). It is important to note that not all settings are configurable. As this is meant to bulk create consistent sessions, it will create a room that starts immediately and has no end date. As such, you cannot set recurrence rules either.
+Next, verify your session settings match your expectations. For more information on session settings, see [Collaborate Session Definitions](https://docs.blackboard.com/collab/CollaborateSessionDefinitions.html). It is important to note that not all settings are configurable. As this is meant to bulk create consistent sessions, it will create a room that starts immediately and has no end date. As such, you cannot set recurrence rules either.
 
 ```json
 session_settings = {
