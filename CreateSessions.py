@@ -121,8 +121,7 @@ def main(datadir,courses,users):
             VERIFY_CERTS = False
     except KeyError:
         errMsg = "Invalid configuration in Config.py: collab.verify_certs missing."
-        print(errMsg)
-        logger.error(errMsg)
+        logger.critical(errMsg)
         sys.exit()
     
     logger.info("Starting bulk creation process")
@@ -132,8 +131,7 @@ def main(datadir,courses,users):
         authorized_session.setToken()
     except ValueError:
         errMsg = "Invalid configuration in Config.py: collab settings missing or incomplete"
-        print(errMsg)
-        logger.error(errMsg)
+        logger.critical(errMsg)
         sys.exit()
 
     ctxDict = {}
@@ -146,16 +144,14 @@ def main(datadir,courses,users):
         sesCtrl = SessionController.SessionController(Config.collab['collab_base_url'], authorized_session, VERIFY_CERTS)
     except KeyError:
         errMsg = "Invalid configuration in Config.py: collab settings missing or incomplete"
-        print(errMsg)
-        logger.error(errMsg)
+        logger.critical(errMsg)
         sys.exit()
 
     try:
         session_config = Config.session_settings
     except KeyError:
         errMsg = "Invalid configuration in Config.py: session settings missing"
-        print(errMsg)
-        logger.error(errMsg)
+        logger.critical(errMsg)
         sys.exit()
 
     try:
@@ -169,8 +165,7 @@ def main(datadir,courses,users):
 
     except Exception as e:
         errMsg = "Error opening output file: " + str(e)
-        print(errMsg)
-        logger.error(errMsg)
+        logger.critical(errMsg)
         sys.exit()
 
     if COURSES:
@@ -187,89 +182,116 @@ def main(datadir,courses,users):
                     insName = course[3]
                     insEmail = course[4]
 
-                    if insEmail is None or insEmail == "" or validate_email(insEmail) == False:
-                        logger.error("Instructor " + insName + " does not have a valid email address")
+                    if insEmail is None or insEmail == "":
+                        logger.error("Instructor <" + insName + "> email address is blank")
+                        continue
+                    elif validate_email(insEmail) == False:
+                        logger.error("Instructor <" + insName + "> does not have a valid email address: <" + insEmail + ">")
                         continue
 
                     logger.debug(crsId + ',' + crsName + ',' + insId + ',' + insName + ',' + insEmail)
                     
+                    try:
+                        ctxId = ctxCtrl.getContext(crsName)
 
-                    ctxId = ctxCtrl.getContext(crsName)
+                        if ctxId['contextId'] is None:
+                            ctx = Context.Context(crsName,crsName,crsName,crsId)
+                            ctxres = ctxCtrl.createContext(ctx.getContextJson())
 
-                    if ctxId['contextId'] is None:
-                        ctx = Context.Context(crsName,crsName,crsName,crsId)
-                        ctxres = ctxCtrl.createContext(ctx.getContextJson())
+                            for k in ctxres:
+                                result = k
+                                break
 
-                        for k in ctxres:
+                            if result == '200':
+                                ctxId = { 'contextId' :  ctxres[result]}
+                            else:
+                                logger.error("Error creating context for course " + crsName + ", " + result + ": " + ctxres[result])
+                                continue
+
+                        logger.debug(ctxId['contextId'])
+
+                        ctxDict[crsId] = {
+                            "contextId" : ctxId['contextId'],
+                            "teacherId" : insId
+                        }
+                    except Exception as e:
+                        logger.error("Error creating Context: " + str(e))
+                        continue
+
+                    try:
+                        ses = Session.Session(crsName, crsName, str(datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")), None, session_config)
+                        sesres = sesCtrl.createSession(ses.getSessionJson())
+
+                        logger.debug(ses.getSessionJson())
+
+                        for k in sesres:
                             result = k
                             break
 
                         if result == '200':
-                            ctxId = { 'contextId' :  ctxres[result]}
+                            ses.setId(sesres[result])
+                            logger.info("Session: " + ses.getId() + ", CREATED, for course " + crsName)
                         else:
-                            logger.error("Error creating context for course " + crsName + ", " + result + ": " + ctxres[result])
+                            logger.error("Error creating session for course " + crsName + ", " + result + ": " + sesres[result])
+                            continue
+                        
+                        sesDict[crsId] = ses
+                    except Exception as e:
+                        logger.error("Error creating Session: " + str(e))
+                        continue
+
+                    try:
+                        if ctxCtrl.assignSessionToContext(ctxId['contextId'],ses.getId()) == False:
+                            logger.error("Error assigning session to context for course " + crsName + ", session: " + ses.getId() + ", context: " + ctxId['contextId'])
+                            continue
+                    except Exception as e:
+                        logger.error("Error assigning session to Context: " + str(e))
+                        continue
+
+                    try:
+                        teacher = User.User(insName,insId,insEmail)
+
+                        teacherres = usrCtrl.createUser(teacher.getUserJson())
+
+                        for k in teacherres:
+                            result = k
+                            break
+
+                        if result == '200':
+                            teacher.setId(teacherres[result])
+                        else:
+                            logger.error("Error creating user " + insName + " for course " + crsName + ", " + result + ": " + teacherres[result])
                             continue
 
-                    logger.debug(ctxId['contextId'])
-
-                    ctxDict[crsId] = {
-                        "contextId" : ctxId['contextId'],
-                        "teacherId" : insId
-                    }
-                    ses = Session.Session(crsName, crsName, str(datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")), None, session_config)
-                    sesres = sesCtrl.createSession(ses.getSessionJson())
-
-                    logger.debug(ses.getSessionJson())
-
-                    for k in sesres:
-                        result = k
-                        break
-
-                    if result == '200':
-                        ses.setId(sesres[result])
-                        logger.info("Session: " + ses.getId() + ", CREATED, for course " + crsName)
-                    else:
-                        logger.error("Error creating session for course " + crsName + ", " + result + ": " + sesres[result])
-                        continue
-                    
-                    sesDict[crsId] = ses
-
-                    if ctxCtrl.assignSessionToContext(ctxId['contextId'],ses.getId()) == False:
-                        logger.error("Error assing session to context for course " + crsName + ", session: " + ses.getId() + ", context: " + ctxId['contextId'])
+                        logger.debug(teacher.getUserJson())
+                        usrDict[insId] = teacher
+                    except Exception as e:
+                        logger.error("Error creating user " + insName + " for course " + crsName + ": " + str(e))
                         continue
 
-                    teacher = User.User(insName,insId,insEmail)
+                    try:
+                        urlres = sesCtrl.enrollUser(ses.getId(),teacher.getId(),'moderator')
 
-                    teacherres = usrCtrl.createUser(teacher.getUserJson())
+                        for k in urlres:
+                            result = k
+                            break
 
-                    for k in teacherres:
-                        result = k
-                        break
-
-                    if result == '200':
-                        teacher.setId(teacherres[result])
-                    else:
-                        logger.error("Error creating user " + insName + " for course " + crsName + ", " + result + ": " + teacherres[result])
+                        if result == '200':
+                            teacherUrl = urlres[result]
+                        else:
+                            logger.error("Error creating enrollment " + insName + " for course " + crsName + ", " + result + ": " + urlres[result])
+                            continue
+                    except Exception as e:
+                        logger.error("Error creating enrollment " + insName + " for course " + crsName + ": " + str(e))
                         continue
+                                    
+                    try:
+                        teacherwriter.writerow([ teacher.getExtId(), teacher.getEmail(), ses.getName(), teacherUrl])
 
-                    logger.debug(teacher.getUserJson())
-                    usrDict[insId] = teacher
-
-                    urlres = sesCtrl.enrollUser(ses.getId(),teacher.getId(),'moderator')
-
-                    for k in urlres:
-                        result = k
-                        break
-
-                    if result == '200':
-                        teacherUrl = urlres[result]
-                    else:
-                        logger.error("Error creating enrollment " + insName + " for course " + crsName + ", " + result + ": " + urlres[result])
+                        logger.info("Session link: " + teacherUrl + " for User: " + insEmail + " CREATED for course " + crsName)
+                    except KeyError as ke:
+                        logger.error("Error writing teacher enrollment information: " + str(ke))
                         continue
-                                   
-                    teacherwriter.writerow([ teacher.getExtId(), teacher.getEmail(), ses.getName(), teacherUrl])
-
-                    logger.info("Session link: " + teacherUrl + ", to User: " + insEmail + ", SENT for course " + crsName)
 
     if USERS:
         with open(datadir + '/student.csv', newline='') as csvfile:
@@ -284,26 +306,34 @@ def main(datadir,courses,users):
                     studentName = user[1]
                     studentEmail = user[2]
 
-                    if studentEmail is None or studentEmail == "" or validate_email(studentEmail) == False:
-                        logger.error("Instructor " + insName + " does not have a valid email address")
+                    if studentEmail is None or studentEmail == "":
+                        logger.error("Student <" + studentName + "'s> is blank")
+                        continue
+                    elif validate_email(studentEmail) == False:
+                        logger.error("Student <" + studentName + "> does not have a valid email address: <" + studentEmail + ">")
                         continue
 
-                    student = User.User(studentName,studentId,studentEmail)
+                    try:
+                        student = User.User(studentName,studentId,studentEmail)
 
-                    studentres = usrCtrl.createUser(student.getUserJson())
+                        studentres = usrCtrl.createUser(student.getUserJson())
 
-                    for k in studentres:
-                        result = k
-                        break
+                        for k in studentres:
+                            result = k
+                            break
 
-                    if result == '200':
-                        student.setId(studentres[result])
-                    else:
-                        logger.error("Error creating user " + studentName + ", " + result + ": " + teacherres[result])
+                        if result == '200':
+                            student.setId(studentres[result])
+                            logger.info("Student: " + student.getId() + ", CREATED, for user " + student.getDisplayName())
+                        else:
+                            logger.error("Error creating user " + studentName + ", " + result + ": " + studentres[result])
+                            continue
+
+                        logger.debug(student.getUserJson())
+                        usrDict[studentId] = student
+                    except Exception as e:
+                        logger.error("Error creating student " + studentName + ": " + str(e))
                         continue
-
-                    logger.debug(student.getUserJson())
-                    usrDict[studentId] = student
 
         with open(datadir + '/enrollment.csv', newline='') as csvfile:
                 enrollments = csv.reader(csvfile, delimiter=',', quotechar='|')
@@ -328,21 +358,29 @@ def main(datadir,courses,users):
                         logger.error("studentId " + studentId + " not found")
                         continue
 
-                    urlres = sesCtrl.enrollUser(session.getId(),user.getId(),'participant')
+                    try:
+                        urlres = sesCtrl.enrollUser(session.getId(),user.getId(),'participant')
 
-                    for k in urlres:
-                        result = k
-                        break
+                        for k in urlres:
+                            result = k
+                            break
 
-                    if result == '200':
-                        studentUrl = urlres[result]
-                    else:
-                        logger.error("Error creating enrollment " + user.getDisplayName() + " for course " + session.getName() + ", " + result + ": " + urlres[result])
+                        if result == '200':
+                            studentUrl = urlres[result]
+                        else:
+                            logger.error("Error creating enrollment " + user.getDisplayName() + " for course " + session.getName() + ", " + result + ": " + urlres[result])
+                            continue
+                    except Exception as e:
+                        logger.error("Error creating enrollment " + user.getDisplayName() + " for course " + session.getName() + ": " + str(e))
                         continue
               
-                    studentwriter.writerow([ courseId, ctxDict[courseId]['teacherId'], usrDict[ctxDict[courseId]['teacherId']].getDisplayName(), user.getExtId(), user.getDisplayName(), user.getEmail(), session.getName(), studentUrl])
+                    try:
+                        studentwriter.writerow([ courseId, ctxDict[courseId]['teacherId'], usrDict[ctxDict[courseId]['teacherId']].getDisplayName(), user.getExtId(), user.getDisplayName(), user.getEmail(), session.getName(), studentUrl])
 
-                    logger.info("Session link: " + studentUrl + ", to User: " + user.getEmail() + ", SENT for course " + session.getName())
+                        logger.info("Session link: " + studentUrl + " for User: " + user.getEmail() + " CREATED for course " + session.getName())
+                    except KeyError as ke:
+                        logger.error("Error writing student enrollment information: " + str(ke))
+                        continue
 
     logger.info("Bulk creation processing complete")
 

@@ -41,37 +41,43 @@ logging = {
             "maxBytes" : 10485760,
             "backupCount" : 20,
             "encoding" : "utf8"
+        },
+        "console": {
+            "class" : "logging.StreamHandler",
+            "level" : "INFO",
+            "formatter" : "simple",
+            "stream" : "ext://sys.stdout"
         }
     },
     "loggers" : {
         "sessions" : {
             "level": "INFO",
-            "handlers" : ["collab_file_handler"],
+            "handlers" : ["collab_file_handler","console"],
             "propagate" : "no"
         },
         "contexts": {
             "level": "INFO",
-            "handlers": ["collab_file_handler"],
+            "handlers": ["collab_file_handler","console"],
             "propagate": "no"
         },
         "users": {
             "level": "INFO",
-            "handlers": ["collab_file_handler"],
+            "handlers": ["collab_file_handler","console"],
             "propagate": "no"
         },
         "csv": {
             "level": "INFO",
-            "handlers": ["collab_file_handler"],
+            "handlers": ["collab_file_handler","console"],
             "propagate": "no"
         },
         "email": {
             "level": "INFO",
-            "handlers": ["collab_file_handler"],
+            "handlers": ["collab_file_handler","console"],
             "propagate": "no"
         },
     },
     "root": {
         "level": "INFO",
-        "handlers": ["collab_file_handler"]
+        "handlers": ["collab_file_handler","console"]
     }
 }

@@ -87,7 +87,7 @@ class AuthController():
         if r.status_code == 200:
             parsed_json = json.loads(r.text)
             
-            self.cache = TTLCache(maxsize=1, ttl=parsed_json['expires_in'])
+            self.cache = TTLCache(maxsize=1, ttl=(parsed_json['expires_in']-5))
 
             self.cache['token'] = parsed_json['access_token']
 
@@ -104,6 +104,8 @@ class AuthController():
 
             return token
         except KeyError:
+            self.logger.info("Token expired, requesting new token")
             self.setToken()
+            self.logger.info("New token acquired: " + self.cache['token'])
     
             return self.cache['token']
