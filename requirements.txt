@@ -4,6 +4,6 @@ chardet==3.0.4
 click==7.1.1
 idna==2.9
 PyJWT==1.7.1
-requests==2.23.0
+requests==2.31.0
 urllib3==1.25.9
 yagmail==0.11.224
